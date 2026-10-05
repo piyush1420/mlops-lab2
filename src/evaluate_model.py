@@ -2,7 +2,6 @@ import pickle, os, json, random
 from sklearn.metrics import f1_score
 import joblib, glob, sys
 import argparse
-from sklearn.datasets import make_classification
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -20,17 +19,11 @@ if __name__=='__main__':
         raise ValueError('Failed to catching the latest model')
 
     try:
-        # Check if the file exists within the folder
-        X, y = make_classification(
-                            n_samples=random.randint(0, 2000),
-                            n_features=6,
-                            n_informative=3,
-                            n_redundant=0,
-                            n_repeated=0,
-                            n_classes=2,
-                            random_state=0,
-                            shuffle=True,
-                        )
+        # CHANGE: load the saved test flowers instead of making new fake data
+        with open('data/data.pickle', 'rb') as data:
+            X = pickle.load(data)
+        with open('data/target.pickle', 'rb') as data:
+            y = pickle.load(data)
     except:
         raise ValueError('Failed to catching the data')
 
