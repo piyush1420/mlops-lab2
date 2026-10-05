@@ -1,0 +1,6 @@
+data/
+mlruns/
+/model_*.joblib
+/*_metrics.json
+__pycache__/
+.DS_Store
