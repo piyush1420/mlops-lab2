@@ -1,0 +1,69 @@
+name: Periodic Model Calibration
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # minutes, hours, day, month, day of week (every day at midnight UTC)
+  workflow_dispatch:      # adds a "Run workflow" button to run it by hand
+
+permissions:
+  contents: write
+
+env:
+  MLFLOW_ALLOW_FILE_STORE: "true"
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Generate and Store Timestamp
+      id: timestamp
+      run: |
+        timestamp=$(date '+%Y%m%d%H%M%S')
+        echo "$timestamp" > timestamp.txt
+        echo "timestamp=$timestamp" >> $GITHUB_ENV
+
+    - name: Check File Permissions
+      run: ls -l ./src/train_model.py
+
+    - name: Set File Permissions
+      run: chmod +x ./src/train_model.py
+
+    - name: Retrain Model
+      run: python ./src/train_model.py --timestamp "$timestamp"
+
+    - name: Evaluate Model and Log Metrics
+      run: |
+        python ./src/evaluate_model.py --timestamp "$timestamp"
+        mkdir -p metrics
+        mv "${timestamp}_metrics.json" "metrics/${timestamp}_metrics.json"
+
+    - name: Store and Version the New Model
+      run: |
+        mkdir -p models
+        mv "model_${timestamp}_dt_model.joblib" "models/model_${timestamp}_dt_model.joblib"
+
+    - name: Commit and Push Changes
+      run: |
+        git config --global user.email "92962664+piyush1420@users.noreply.github.com"
+        git config --global user.name "piyushDaga"
+        git add -f "metrics/${timestamp}_metrics.json" "models/model_${timestamp}_dt_model.joblib"
+        if ! git diff --cached --quiet; then
+          git commit -m "Scheduled retrain: add metrics and model for $timestamp"
+          git push
+        else
+          echo "No changes to commit."
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
