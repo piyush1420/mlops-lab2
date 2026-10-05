@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write  # Lets the robot push the new model back to this repo
 
+env:
+  MLFLOW_ALLOW_FILE_STORE: "true"  # Lets the newest MLflow use the ./mlruns folder
+
 jobs:
   retrain:
     runs-on: ubuntu-latest
